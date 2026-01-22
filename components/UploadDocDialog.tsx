@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useRouter } from 'next/navigation'
-import { Loader2 } from 'lucide-react' // You might need to install lucide-react or use text
+import { Loader2 } from 'lucide-react'
 
 export function UploadDocDialog({ notebookId }: { notebookId: string }) {
   const [open, setOpen] = useState(false)
@@ -58,12 +58,12 @@ export function UploadDocDialog({ notebookId }: { notebookId: string }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="bg-white">Upload PDF</Button>
+        <Button variant="outline" className="bg-white">Add Source</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add Source Material</DialogTitle>
-          <DialogDescription>Upload a PDF to chat with.</DialogDescription>
+          <DialogDescription>Upload resoruces to study.</DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleUpload} className="grid gap-4 py-4">

@@ -1,137 +1,167 @@
 'use client'
 
-import { useState, useRef, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { useState, useRef, useEffect } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Send, Bot, User, Loader2 } from 'lucide-react'
+import { createClient } from '@/utils/supabase/client'
 import ReactMarkdown from 'react-markdown'
-import { createClient } from '@/utils/supabase/client' // Import client
 
-interface Message {
-  role: 'user' | 'ai'
-  content: string
+type Message = {
+    id: string
+    role: 'user' | 'ai'
+    content: string
+    created_at: string
 }
 
 export function ChatInterface({ notebookId }: { notebookId: string }) {
-  const [messages, setMessages] = useState<Message[]>([]) // Start empty
-  const [input, setInput] = useState("")
-  const [loading, setLoading] = useState(false)
-  const bottomRef = useRef<HTMLDivElement>(null)
-  const supabase = createClient() // Initialize Supabase client
+  const [messages, setMessages] = useState<Message[]>([])
+  const [input, setInput] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  
+  // Ref for the scrollable container
+  const scrollRef = useRef<HTMLDivElement>(null)
+  
+  const supabase = createClient()
 
-  // 1. FETCH HISTORY ON LOAD
+  // 1. Fetch initial history
   useEffect(() => {
-    const fetchMessages = async () => {
+    const fetchHistory = async () => {
         const { data } = await supabase
             .from('chat_messages')
             .select('*')
             .eq('notebook_id', notebookId)
             .order('created_at', { ascending: true })
-
-        if (data && data.length > 0) {
-            setMessages(data.map(msg => ({ role: msg.role as 'user' | 'ai', content: msg.content })))
-        } else {
-            // Default welcome message if no history
-            setMessages([{ role: 'ai', content: "Hello! I'm ready to answer questions about your documents." }])
-        }
+        
+        if (data) setMessages(data)
     }
-    fetchMessages()
-  }, [notebookId])
+    fetchHistory()
+  }, [notebookId, supabase])
 
-  // Scroll to bottom when messages change
+  // 2. Auto-scroll to bottom whenever messages change
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" })
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+    }
   }, [messages])
 
-  const handleSend = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!input.trim() || loading) return
 
-    const userMessage = input
-    setInput("")
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }])
-    setLoading(true)
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!input.trim() || isLoading) return
+
+    const userMsg: Message = {
+        id: crypto.randomUUID(),
+        role: 'user',
+        content: input,
+        created_at: new Date().toISOString()
+    }
+    
+    setMessages(prev => [...prev, userMsg])
+    setInput('')
+    setIsLoading(true)
 
     try {
-      const res = await fetch('/api/chat', {
+      const response = await fetch('/api/chat', {
         method: 'POST',
-        body: JSON.stringify({ message: userMessage, notebookId })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: input, notebookId }),
       })
       
-      const data = await res.json()
-      if (data.error) throw new Error(data.error)
+      if (!response.ok) throw new Error(await response.text())
 
-      setMessages(prev => [...prev, { role: 'ai', content: data.answer }])
-    } catch (err) {
-      setMessages(prev => [...prev, { role: 'ai', content: "Sorry, I encountered an error." }])
+      const data = await response.json()
+      
+      const aiMsg: Message = {
+        id: crypto.randomUUID(),
+        role: 'ai',
+        content: data.answer,
+        created_at: new Date().toISOString()
+      }
+      setMessages(prev => [...prev, aiMsg])
+
+    } catch (error) {
+      console.error(error)
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
   }
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-slate-950">
+    // Added overflow-hidden to the parent to contain the scroll area
+    <div className="flex-1 flex flex-col h-full bg-background relative overflow-hidden">
       
-      {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-4">
-        {messages.map((msg, i) => (
-          <div key={i} className={`flex gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-            <div className={`h-8 w-8 rounded flex-shrink-0 flex items-center justify-center text-white text-xs font-bold ${
-                msg.role === 'ai' ? 'bg-blue-600' : 'bg-slate-500'
-            }`}>
-                {msg.role === 'ai' ? 'AI' : 'You'}
-            </div>
-            
-            <div className={`p-4 rounded-xl text-sm leading-relaxed max-w-[85%] shadow-sm ${
-                msg.role === 'ai' 
-                  ? 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100 rounded-tl-none' 
-                  : 'bg-blue-600 text-white rounded-tr-none'
-            }`}>
+      {/* FIXED: Native div with overflow-y-auto handles scrolling reliably */}
+      <div className="flex-1 overflow-y-auto p-4" ref={scrollRef}>
+        <div className="space-y-6 pb-4 max-w-3xl mx-auto">
+          {messages.map((msg) => (
+            <div
+              key={msg.id}
+              className={`flex gap-3 ${
+                msg.role === 'user' ? 'justify-end' : 'justify-start'
+              }`}
+            >
+              {msg.role === 'ai' && (
+                <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center border border-border flex-shrink-0">
+                  <Bot className="h-5 w-5 text-primary-foreground" />
+                </div>
+              )}
+              
+              <div
+                className={`rounded-2xl px-4 py-2.5 max-w-[85%] text-sm ${
+                  msg.role === 'user'
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-muted text-foreground prose dark:prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-pre:bg-slate-950/50 prose-pre:border-slate-800'
+                }`}
+              >
                 {msg.role === 'ai' ? (
-                  <ReactMarkdown 
-                    components={{
-                      ul: ({...props}) => <ul className="list-disc pl-4 mb-2 space-y-1" {...props} />,
-                      ol: ({...props}) => <ol className="list-decimal pl-4 mb-2 space-y-1" {...props} />,
-                      li: ({...props}) => <li className="pl-1" {...props} />,
-                      h1: ({...props}) => <h1 className="text-lg font-bold mb-2 mt-4 first:mt-0 text-slate-900 dark:text-white" {...props} />,
-                      h2: ({...props}) => <h2 className="text-base font-bold mb-2 mt-3 first:mt-0 text-slate-900 dark:text-white" {...props} />,
-                      h3: ({...props}) => <h3 className="text-sm font-bold mb-1 mt-2 text-slate-900 dark:text-white" {...props} />,
-                      strong: ({...props}) => <strong className="font-bold text-slate-900 dark:text-white" {...props} />,
-                      p: ({...props}) => <p className="mb-2 last:mb-0" {...props} />,
-                      code: ({...props}) => <code className="bg-slate-200 dark:bg-slate-900 px-1 py-0.5 rounded text-xs font-mono text-pink-600" {...props} />,
-                    }}
-                  >
-                    {msg.content}
-                  </ReactMarkdown>
+                    <ReactMarkdown>{msg.content}</ReactMarkdown>
                 ) : (
-                   msg.content
+                    msg.content
                 )}
+              </div>
+
+              {msg.role === 'user' && (
+                 <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center border border-blue-500 flex-shrink-0">
+                   <User className="h-5 w-5 text-white" />
+                 </div>
+              )}
             </div>
-          </div>
-        ))}
-        {loading && (
-             <div className="flex gap-4">
-                <div className="h-8 w-8 rounded bg-blue-600 flex-shrink-0 flex items-center justify-center text-white text-xs font-bold">AI</div>
-                <div className="bg-slate-100 dark:bg-slate-800 p-4 rounded-xl rounded-tl-none text-sm text-slate-500 dark:text-slate-400 italic">
+          ))}
+          {isLoading && (
+             <div className="flex gap-3 justify-start animate-pulse">
+                <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center border border-border">
+                    <Loader2 className="h-5 w-5 text-primary-foreground animate-spin" />
+                </div>
+                <div className="rounded-2xl px-4 py-2.5 bg-muted text-muted-foreground text-sm flex items-center">
                     Thinking...
                 </div>
-            </div>
-        )}
-        <div ref={bottomRef} />
+             </div>
+          )}
+        </div>
       </div>
 
-      <div className="p-4 border-t bg-white dark:bg-slate-950 dark:border-slate-800">
-        <form onSubmit={handleSend} className="flex gap-2 relative">
-            <Input 
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask a question about your notes..." 
-                className="pr-20 bg-white dark:bg-slate-900 dark:text-white dark:border-slate-700 placeholder:text-slate-400"
-                disabled={loading}
-            />
-            <Button type="submit" className="absolute right-1 top-1 h-8">
-                Send
-            </Button>
+      <div className="p-4 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <form onSubmit={handleSubmit} className="max-w-3xl mx-auto flex gap-2 relative">
+          <Input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Ask about your notes..."
+            className="pr-12 py-6 text-base bg-muted/50 border-border focus-visible:ring-primary"
+            disabled={isLoading}
+          />
+          <Button 
+            type="submit" 
+            size="icon" 
+            disabled={isLoading || !input.trim()}
+            className="absolute right-1.5 top-1.5 h-9 w-9 bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            <Send className="h-4 w-4" />
+          </Button>
         </form>
+        <div className="text-center mt-2">
+            <span className="text-[10px] text-muted-foreground">AI can make mistakes. Check important info.</span>
+        </div>
       </div>
     </div>
   )

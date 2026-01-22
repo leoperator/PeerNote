@@ -38,7 +38,6 @@ export function EmailLoginForm({ nextUrl }: { nextUrl: string }) {
 
     const res = await verifyOtp(email, otp, nextUrl)
     
-    // If we get here, it error'd (because success redirects)
     setLoading(false)
     if (res?.error) {
       setError(res.error)
