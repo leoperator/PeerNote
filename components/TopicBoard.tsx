@@ -31,16 +31,13 @@ export function TopicBoard({ topics, notebookId, currentUserId }: { topics: Topi
   return (
     <Dialog>
       <DialogTrigger asChild>
-        {/* FIX: Updated structure to match other Studio cards */}
         <div className="p-4 w-full text-left rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 hover:shadow-md transition-shadow cursor-pointer group">
-           {/* Row for Icon + Title */}
            <div className="flex items-center gap-3 mb-2">
               <div className="h-8 w-8 rounded-full bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 flex items-center justify-center">
                  <Target className="h-4 w-4" />
               </div>
               <span className="font-medium text-sm text-neutral-900 dark:text-neutral-100">Weighted Topics</span>
            </div>
-           {/* Description below */}
            <p className="text-xs text-neutral-500 dark:text-neutral-400">See what's likely to come in the exam.</p>
         </div>
       </DialogTrigger>
@@ -49,7 +46,7 @@ export function TopicBoard({ topics, notebookId, currentUserId }: { topics: Topi
         <DialogHeader className="p-6 border-b border-neutral-200 dark:border-neutral-800 pb-4">
             <div className="flex justify-between items-center pr-8">
                 <div>
-                    <DialogTitle className="text-xl dark:text-neutral-100">Exam Strategy Board</DialogTitle>
+                    <DialogTitle className="text-xl dark:text-neutral-100">Exam Topics Heatmap</DialogTitle>
                     <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
                         Topics ranked by probability and peer votes.
                     </p>
