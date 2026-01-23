@@ -6,6 +6,8 @@
 
 Built with the **Google Gemini 2.5** models, it features context-aware AI that can read your documents *and* search the web for up-to-date information.
 
+Deployed Link: https://peernote-peach.vercel.app/
+
 ## ✨ Features
 
 * **📚 RAG-Powered Chat:** Upload 500+ page PDFs and ask specific questions. The AI cites your notes.
