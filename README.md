@@ -10,6 +10,7 @@ Deployed Link: https://peernote-peach.vercel.app/
 
 ## ✨ Features
 
+* **🔥 Crowdsourced Strategy Board:** A real-time heatmap of high-probability exam topics, ranked by peer votes to focus on what matters most.
 * **📚 RAG-Powered Chat:** Upload 500+ page PDFs and ask specific questions. The AI cites your notes.
 * **🌐 Live Web Grounding:** The AI knows the current date and can search Google for info not in your notes (e.g., "Latest Next.js version").
 * **🤝 Instant Sharing:** Generate a public link to share your notebook with friends. They can view and chat with your materials without an account.
